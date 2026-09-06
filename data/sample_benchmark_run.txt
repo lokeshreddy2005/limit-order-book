@@ -1,0 +1,77 @@
+﻿==================================================================
+Order Book / Matching Engine -- Benchmark
+==================================================================
+Compiler       : GCC 16.2.0
+Build flags    : -std=c++20 -O3 -march=native -DNDEBUG -Wall -Wextra -Wpedantic
+CPU            : Intel64 Family 6 Model 154 Stepping 4, GenuineIntel
+Logical cores  : 12
+Workload size  : 200000 operations per scenario (unless noted)
+Random seed    : 42
+Warm-up        : first 10% of each scenario's iterations (min 1000), unrecorded
+Timer          : std::chrono::steady_clock, per-operation sampling
+==================================================================
+
+Scenario: insert-only (200000 non-crossing limit orders)
+  (run twice: without and with OrderBook::reserve() up front -- see README.md
+   "Design tradeoffs" for why this comparison is here)
+-- insert, no reserve() --
+  samples   : 180000
+  mean      : 320.9 ns
+  min       : 100 ns
+  p50       : 200 ns
+  p95       : 300 ns
+  p99       : 400 ns
+  max       : 6531300 ns
+
+-- insert, with reserve() --
+  samples   : 180000
+  mean      : 267.4 ns
+  min       : 100 ns
+  p50       : 200 ns
+  p95       : 300 ns
+  p99       : 500 ns
+  max       : 127600 ns
+
+Scenario: matching-heavy (200000 crossing limit orders against a deep book)
+-- match --
+  samples   : 180000
+  mean      : 151.6 ns
+  min       : 0 ns
+  p50       : 100 ns
+  p95       : 200 ns
+  p99       : 200 ns
+  max       : 73900 ns
+
+Scenario: cancellation (200000 resting orders, cancelled in random order)
+-- cancel --
+  samples   : 180000
+  mean      : 599.9 ns
+  min       : 100 ns
+  p50       : 600 ns
+  p95       : 900 ns
+  p99       : 1100 ns
+  max       : 158200 ns
+
+Scenario: modification (200000 resting orders, each modified once)
+-- modify --
+  samples   : 180000
+  mean      : 660.8 ns
+  min       : 0 ns
+  p50       : 600 ns
+  p95       : 1400 ns
+  p99       : 1800 ns
+  max       : 218100 ns
+
+Scenario: mixed realistic workload (Poisson order flow, seed=42)
+-- mixed (all op types) --
+  samples   : 180000
+  mean      : 292.1 ns
+  min       : 0 ns
+  p50       : 200 ns
+  p95       : 600 ns
+  p99       : 800 ns
+  max       : 119300 ns
+
+  operation mix : 153036 new orders, 29858 cancels, 17106 modifies (126201 trades generated)
+  elapsed       : 0.0625 s wall time for the full run (including warm-up)
+  throughput    : 3201798 ops/sec (all operation types, full run including warm-up)
